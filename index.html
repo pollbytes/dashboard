@@ -3,482 +3,630 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Dashboard</title>
+    <title>ApexTrade Terminal | Real-time Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-dark: #0b0e11;
+            --panel-bg: #151a21;
+            --border-color: #2a2e39;
+            --up-color: #00c853;
+            --down-color: #ff3d00;
+            --accent: #2962ff;
+            --text-main: #e1e1e1;
+            --text-dim: #848e9c;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #0a0e27;
-            color: #e0e6ed;
-            padding: 20px;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* App-like feel */
         }
 
-        .dashboard {
-            max-width: 1400px;
-            margin: 0 auto;
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #1a1f3a;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
         }
 
-        .header h1 {
-            font-size: 28px;
-            font-weight: 600;
+        .glass-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
         }
 
-        .market-status {
-            display: flex;
-            gap: 20px;
-            align-items: center;
+        .text-up { color: var(--up-color); }
+        .text-down { color: var(--down-color); }
+        .bg-up { background-color: var(--up-color); }
+        .bg-down { background-color: var(--down-color); }
+
+        .price-flash-up {
+            animation: flashGreen 0.5s ease-out;
+        }
+        .price-flash-down {
+            animation: flashRed 0.5s ease-out;
         }
 
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
+        @keyframes flashGreen {
+            0% { background-color: rgba(0, 200, 83, 0.3); }
+            100% { background-color: transparent; }
+        }
+        @keyframes flashRed {
+            0% { background-color: rgba(255, 61, 0, 0.3); }
+            100% { background-color: transparent; }
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .assets-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .asset-card {
-            background: #151932;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #1a1f3a;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .asset-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-        }
-
-        .asset-card.active {
-            border-color: #3b82f6;
-            background: #1a2038;
-        }
-
-        .asset-symbol {
-            font-size: 14px;
-            color: #8b92a7;
-            margin-bottom: 8px;
-        }
-
-        .asset-price {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .asset-change {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .asset-change.positive {
-            color: #10b981;
-        }
-
-        .asset-change.negative {
-            color: #ef4444;
-        }
-
-        .chart-container {
-            background: #151932;
-            padding: 30px;
-            border-radius: 12px;
-            border: 1px solid #1a1f3a;
-            margin-bottom: 30px;
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .chart-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .timeframe-selector {
-            display: flex;
-            gap: 10px;
-        }
-
-        .timeframe-btn {
-            background: transparent;
-            border: 1px solid #1a1f3a;
-            color: #8b92a7;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s ease;
-        }
-
-        .timeframe-btn:hover {
-            border-color: #3b82f6;
-            color: #e0e6ed;
-        }
-
-        .timeframe-btn.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
-            color: #fff;
-        }
-
-        canvas {
+        /* Canvas container to ensure proper resizing */
+        #chart-container {
+            position: relative;
             width: 100%;
-            height: 400px;
+            height: 100%;
+            cursor: crosshair;
         }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+        
+        .btn-trade {
+            transition: all 0.2s;
         }
-
-        .stat-card {
-            background: #151932;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #1a1f3a;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: #8b92a7;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 600;
+        .btn-trade:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
-<body>
-    <div class="dashboard">
-        <div class="header">
-            <h1>Trading Dashboard</h1>
-            <div class="market-status">
-                <div class="status-indicator">
-                    <div class="status-dot"></div>
-                    <span>Markets Open</span>
+<body class="h-screen w-screen flex flex-col text-sm">
+
+    <!-- Header -->
+    <header class="h-12 border-b border-[#2a2e39] flex items-center px-4 justify-between shrink-0 bg-[#151a21]">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-blue-500 font-bold text-lg tracking-wider">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                APEXTRADE
+            </div>
+            <div class="h-4 w-px bg-gray-700 mx-2"></div>
+            <div id="connection-status" class="flex items-center gap-2 text-xs text-green-400">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Connected
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="text-right">
+                <div class="text-[10px] text-gray-400 uppercase">Equity Value</div>
+                <div class="font-mono font-bold text-base" id="equity-val">$124,592.45</div>
+            </div>
+            <div class="w-8 h-8 rounded bg-gray-700 flex items-center justify-center text-xs font-bold">
+                JD
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Watchlist -->
+        <aside class="w-64 border-r border-[#2a2e39] flex flex-col bg-[#151a21] shrink-0 hidden md:flex">
+            <div class="p-3 border-b border-[#2a2e39] font-semibold text-gray-400 text-xs tracking-wider flex justify-between">
+                <span>WATCHLIST</span>
+                <span>CHG%</span>
+            </div>
+            <div id="watchlist" class="flex-1 overflow-y-auto">
+                <!-- Generated by JS -->
+            </div>
+        </aside>
+
+        <!-- Center: Chart Area -->
+        <main class="flex-1 flex flex-col relative bg-[#0b0e11]">
+            <!-- Ticker Info Bar -->
+            <div class="h-14 border-b border-[#2a2e39] flex items-center px-4 justify-between bg-[#0b0e11]">
+                <div class="flex items-center gap-4">
+                    <h1 id="active-symbol" class="text-2xl font-bold tracking-tight text-white">BTC/USD</h1>
+                    <div class="flex flex-col">
+                        <span id="current-price" class="text-lg font-mono font-medium text-up">42,150.00</span>
+                        <span id="price-change" class="text-xs font-mono text-up">+1.24%</span>
+                    </div>
                 </div>
-                <span id="current-time"></span>
-            </div>
-        </div>
-
-        <div class="assets-grid" id="assets-grid"></div>
-
-        <div class="chart-container">
-            <div class="chart-header">
-                <div class="chart-title" id="chart-title">BTC/USD</div>
-                <div class="timeframe-selector">
-                    <button class="timeframe-btn" data-timeframe="1m">1M</button>
-                    <button class="timeframe-btn" data-timeframe="5m">5M</button>
-                    <button class="timeframe-btn active" data-timeframe="15m">15M</button>
-                    <button class="timeframe-btn" data-timeframe="1h">1H</button>
-                    <button class="timeframe-btn" data-timeframe="1d">1D</button>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 rounded bg-[#2a2e39] hover:bg-[#363c4a] text-xs text-gray-300">1M</button>
+                    <button class="px-3 py-1 rounded bg-[#2a62ff] text-white text-xs font-bold">5M</button>
+                    <button class="px-3 py-1 rounded bg-[#2a2e39] hover:bg-[#363c4a] text-xs text-gray-300">15M</button>
+                    <button class="px-3 py-1 rounded bg-[#2a2e39] hover:bg-[#363c4a] text-xs text-gray-300">1H</button>
                 </div>
             </div>
-            <canvas id="trading-chart"></canvas>
-        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">24h Volume</div>
-                <div class="stat-value" id="volume">$0</div>
+            <!-- Canvas Container -->
+            <div id="chart-container" class="flex-1">
+                <canvas id="main-chart"></canvas>
+                <!-- Tooltip Overlay -->
+                <div id="chart-tooltip" class="absolute pointer-events-none hidden bg-[#1e2329] border border-[#2a2e39] p-2 rounded shadow-xl text-xs z-10" style="top: 0; left: 0;">
+                    <div class="flex justify-between gap-4"><span class="text-gray-400">O:</span> <span id="tt-open" class="font-mono"></span></div>
+                    <div class="flex justify-between gap-4"><span class="text-gray-400">H:</span> <span id="tt-high" class="font-mono"></span></div>
+                    <div class="flex justify-between gap-4"><span class="text-gray-400">L:</span> <span id="tt-low" class="font-mono"></span></div>
+                    <div class="flex justify-between gap-4"><span class="text-gray-400">C:</span> <span id="tt-close" class="font-mono"></span></div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">24h High</div>
-                <div class="stat-value" id="high">$0</div>
+
+            <!-- Trade Controls (Bottom of Center) -->
+            <div class="h-16 border-t border-[#2a2e39] bg-[#151a21] p-2 flex items-center justify-between gap-4">
+                 <div class="flex gap-2 w-full max-w-md">
+                     <button id="btn-sell" class="btn-trade flex-1 bg-[#ff3d00] hover:bg-[#d50000] text-white font-bold py-2 rounded flex flex-col items-center justify-center leading-tight">
+                         <span>SELL MKT</span>
+                         <span class="text-[10px] font-normal opacity-80" id="btn-sell-price">--</span>
+                     </button>
+                     <div class="flex flex-col items-center justify-center w-24">
+                         <label class="text-[10px] text-gray-400 mb-1">QTY</label>
+                         <input type="number" value="1.0" class="w-full bg-[#0b0e11] border border-[#2a2e39] text-center text-white rounded py-1 font-mono text-sm focus:outline-none focus:border-blue-500">
+                     </div>
+                     <button id="btn-buy" class="btn-trade flex-1 bg-[#00c853] hover:bg-[#00a844] text-white font-bold py-2 rounded flex flex-col items-center justify-center leading-tight">
+                         <span>BUY MKT</span>
+                         <span class="text-[10px] font-normal opacity-80" id="btn-buy-price">--</span>
+                     </button>
+                 </div>
+                 <div class="hidden lg:block text-xs text-gray-500">
+                     Market data is simulated for demo purposes.
+                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">24h Low</div>
-                <div class="stat-value" id="low">$0</div>
+        </main>
+
+        <!-- Right Sidebar: Order Book & Trades -->
+        <aside class="w-72 border-l border-[#2a2e39] flex flex-col bg-[#151a21] shrink-0 hidden lg:flex">
+            <!-- Order Book -->
+            <div class="flex-1 flex flex-col min-h-0 border-b border-[#2a2e39]">
+                <div class="p-2 border-b border-[#2a2e39] text-xs font-semibold text-gray-400">ORDER BOOK</div>
+                <div class="flex text-[10px] text-gray-500 px-2 py-1">
+                    <span class="w-1/3">Price</span>
+                    <span class="w-1/3 text-right">Amount</span>
+                    <span class="w-1/3 text-right">Total</span>
+                </div>
+                <div id="orderbook-asks" class="flex flex-col-reverse overflow-hidden h-1/2 text-xs font-mono">
+                    <!-- Asks go here -->
+                </div>
+                <div id="current-price-middle" class="py-1 border-y border-[#2a2e39] text-center font-bold text-lg text-up flex items-center justify-center gap-2">
+                    42,150.00 <span class="text-xs">↑</span>
+                </div>
+                <div id="orderbook-bids" class="flex flex-col overflow-hidden h-1/2 text-xs font-mono">
+                    <!-- Bids go here -->
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Market Cap</div>
-                <div class="stat-value" id="market-cap">$0</div>
+
+            <!-- Recent Trades -->
+            <div class="h-1/3 flex flex-col">
+                <div class="p-2 border-b border-[#2a2e39] text-xs font-semibold text-gray-400">RECENT TRADES</div>
+                <div class="flex-1 overflow-y-auto" id="recent-trades">
+                    <!-- Trades go here -->
+                </div>
             </div>
-        </div>
+        </aside>
     </div>
 
     <script>
-        class TradingAsset {
-            constructor(symbol, name, initialPrice, volatility) {
-                this.symbol = symbol;
-                this.name = name;
-                this.currentPrice = initialPrice;
-                this.volatility = volatility;
-                this.priceHistory = [];
-                this.change24h = 0;
-                this.high24h = initialPrice;
-                this.low24h = initialPrice;
-                this.volume24h = 0;
-            }
+        // --- Configuration & State ---
+        const ASSETS = {
+            'BTC/USD': { price: 42150.00, vol: 50, type: 'crypto', decimals: 2 },
+            'ETH/USD': { price: 2250.00, vol: 80, type: 'crypto', decimals: 2 },
+            'EUR/USD': { price: 1.0850, vol: 20, type: 'forex', decimals: 5 },
+            'SPY':     { price: 475.20, vol: 35, type: 'stock', decimals: 2 },
+            'TSLA':    { price: 248.50, vol: 90, type: 'stock', decimals: 2 },
+            'XAU/USD': { price: 2045.10, vol: 40, type: 'commodity', decimals: 2 }
+        };
 
-            generateNextPrice() {
-                const randomChange = (Math.random() - 0.5) * 2 * this.volatility;
-                const trendFactor = Math.sin(Date.now() / 10000) * this.volatility * 0.5;
-                const newPrice = this.currentPrice * (1 + (randomChange + trendFactor) / 100);
+        let currentSymbol = 'BTC/USD';
+        let marketData = []; // Array of candles {time, open, high, low, close, vol}
+        let orderBook = { asks: [], bids: [] };
+        let lastPrice = ASSETS[currentSymbol].price;
+        let isRunning = true;
+        
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('main-chart');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('chart-container');
+        
+        // Chart State
+        let chartConfig = {
+            candleWidth: 8,
+            candleSpacing: 2,
+            scaleY: 1,
+            offsetY: 0,
+            offsetX: 0,
+            gridColor: '#2a2e39',
+            bgColor: '#0b0e11',
+            wickColor: '#848e9c',
+            maxCandles: 200
+        };
+
+        // --- Initialization ---
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Generate initial history
+            generateHistory();
+            
+            // Build UI
+            renderWatchlist();
+            
+            // Start loops
+            requestAnimationFrame(animate);
+            setInterval(updateMarket, 1000); // New candle updates
+            setInterval(updateOrderBook, 200); // Fast order book updates
+            setInterval(simulateTrade, 1500); // Random market trades
+            
+            // Interaction
+            setupInteractions();
+        }
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            drawChart();
+        }
+
+        // --- Market Simulation Core ---
+
+        function generateHistory() {
+            marketData = [];
+            let price = ASSETS[currentSymbol].price;
+            let time = Date.now() - (chartConfig.maxCandles * 60000); // 1 min candles
+            
+            for(let i=0; i<100; i++) {
+                const volatility = ASSETS[currentSymbol].vol / 10000;
+                const change = price * (Math.random() - 0.5) * volatility;
                 
-                this.currentPrice = Math.max(newPrice, this.currentPrice * 0.95);
-                this.priceHistory.push({
-                    timestamp: Date.now(),
-                    price: this.currentPrice
+                const open = price;
+                const close = price + change;
+                const high = Math.max(open, close) + Math.abs(change * Math.random());
+                const low = Math.min(open, close) - Math.abs(change * Math.random());
+                
+                marketData.push({
+                    time: time + (i * 60000),
+                    open, high, low, close,
+                    volume: Math.random() * 100
                 });
-
-                if (this.priceHistory.length > 100) {
-                    this.priceHistory.shift();
-                }
-
-                this.high24h = Math.max(this.high24h, this.currentPrice);
-                this.low24h = Math.min(this.low24h, this.currentPrice);
-                this.volume24h = Math.random() * 1000000000;
-
-                if (this.priceHistory.length > 1) {
-                    const firstPrice = this.priceHistory[0].price;
-                    this.change24h = ((this.currentPrice - firstPrice) / firstPrice) * 100;
-                }
-
-                return this.currentPrice;
+                
+                price = close;
+                lastPrice = close;
             }
         }
 
-        class TradingDashboard {
-            constructor() {
-                this.assets = [
-                    new TradingAsset('BTC', 'Bitcoin', 45000, 2),
-                    new TradingAsset('ETH', 'Ethereum', 3200, 2.5),
-                    new TradingAsset('EUR/USD', 'Euro', 1.09, 0.3),
-                    new TradingAsset('AAPL', 'Apple', 178, 1.5),
-                    new TradingAsset('TSLA', 'Tesla', 245, 3),
-                    new TradingAsset('GOLD', 'Gold', 2040, 0.8)
-                ];
+        function updateMarket() {
+            if(!isRunning) return;
 
-                this.selectedAsset = this.assets[0];
-                this.canvas = document.getElementById('trading-chart');
-                this.context = this.canvas.getContext('2d');
-                this.setupCanvas();
-                this.initializeUI();
-                this.startSimulation();
+            const volatility = ASSETS[currentSymbol].vol / 5000; // Simulating live movement
+            let currentCandle = marketData[marketData.length - 1];
+            
+            // 20% chance to start a new candle, else update current
+            if (Math.random() > 0.8) {
+                const newOpen = currentCandle.close;
+                currentCandle = {
+                    time: Date.now(),
+                    open: newOpen,
+                    high: newOpen,
+                    low: newOpen,
+                    close: newOpen,
+                    volume: 0
+                };
+                marketData.push(currentCandle);
+                if(marketData.length > chartConfig.maxCandles) marketData.shift();
             }
 
-            setupCanvas() {
-                const dpr = window.devicePixelRatio || 1;
-                const rect = this.canvas.getBoundingClientRect();
-                this.canvas.width = rect.width * dpr;
-                this.canvas.height = rect.height * dpr;
-                this.context.scale(dpr, dpr);
-                this.canvas.style.width = rect.width + 'px';
-                this.canvas.style.height = rect.height + 'px';
-            }
-
-            initializeUI() {
-                const assetsGrid = document.getElementById('assets-grid');
-                
-                this.assets.forEach((asset, index) => {
-                    const card = document.createElement('div');
-                    card.className = `asset-card ${index === 0 ? 'active' : ''}`;
-                    card.innerHTML = `
-                        <div class="asset-symbol">${asset.symbol}</div>
-                        <div class="asset-price" id="price-${asset.symbol}">$${asset.currentPrice.toFixed(2)}</div>
-                        <div class="asset-change" id="change-${asset.symbol}">+0.00%</div>
-                    `;
-                    card.addEventListener('click', () => this.selectAsset(asset, card));
-                    assetsGrid.appendChild(card);
-                });
-
-                document.querySelectorAll('.timeframe-btn').forEach(button => {
-                    button.addEventListener('click', (event) => {
-                        document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
-                        event.target.classList.add('active');
-                    });
-                });
-            }
-
-            selectAsset(asset, cardElement) {
-                document.querySelectorAll('.asset-card').forEach(card => card.classList.remove('active'));
-                cardElement.classList.add('active');
-                this.selectedAsset = asset;
-                document.getElementById('chart-title').textContent = `${asset.symbol} ${asset.name}`;
-            }
-
-            updateAssetCards() {
-                this.assets.forEach(asset => {
-                    asset.generateNextPrice();
-                    
-                    const priceElement = document.getElementById(`price-${asset.symbol}`);
-                    const changeElement = document.getElementById(`change-${asset.symbol}`);
-                    
-                    if (priceElement) {
-                        priceElement.textContent = `$${asset.currentPrice.toFixed(2)}`;
-                    }
-                    
-                    if (changeElement) {
-                        const changeText = `${asset.change24h >= 0 ? '+' : ''}${asset.change24h.toFixed(2)}%`;
-                        changeElement.textContent = changeText;
-                        changeElement.className = `asset-change ${asset.change24h >= 0 ? 'positive' : 'negative'}`;
-                    }
-                });
-            }
-
-            updateStats() {
-                const asset = this.selectedAsset;
-                document.getElementById('volume').textContent = `$${(asset.volume24h / 1e6).toFixed(2)}M`;
-                document.getElementById('high').textContent = `$${asset.high24h.toFixed(2)}`;
-                document.getElementById('low').textContent = `$${asset.low24h.toFixed(2)}`;
-                document.getElementById('market-cap').textContent = `$${(asset.currentPrice * 19000000).toLocaleString()}`;
-            }
-
-            drawChart() {
-                const rect = this.canvas.getBoundingClientRect();
-                const width = rect.width;
-                const height = rect.height;
-                
-                this.context.clearRect(0, 0, width, height);
-                
-                const priceHistory = this.selectedAsset.priceHistory;
-                if (priceHistory.length < 2) return;
-
-                const prices = priceHistory.map(dataPoint => dataPoint.price);
-                const minPrice = Math.min(...prices);
-                const maxPrice = Math.max(...prices);
-                const priceRange = maxPrice - minPrice;
-                
-                const padding = 40;
-                const chartWidth = width - padding * 2;
-                const chartHeight = height - padding * 2;
-
-                this.context.strokeStyle = '#1a1f3a';
-                this.context.lineWidth = 1;
-                for (let i = 0; i <= 5; i++) {
-                    const y = padding + (chartHeight / 5) * i;
-                    this.context.beginPath();
-                    this.context.moveTo(padding, y);
-                    this.context.lineTo(width - padding, y);
-                    this.context.stroke();
-                }
-
-                this.context.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-                this.context.fillStyle = '#8b92a7';
-                for (let i = 0; i <= 5; i++) {
-                    const price = maxPrice - (priceRange / 5) * i;
-                    const y = padding + (chartHeight / 5) * i;
-                    this.context.fillText(`$${price.toFixed(2)}`, 5, y + 4);
-                }
-
-                const gradient = this.context.createLinearGradient(0, padding, 0, height - padding);
-                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
-                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
-                this.context.beginPath();
-                this.context.moveTo(padding, height - padding);
-                
-                priceHistory.forEach((dataPoint, index) => {
-                    const x = padding + (chartWidth / (priceHistory.length - 1)) * index;
-                    const normalizedPrice = (dataPoint.price - minPrice) / priceRange;
-                    const y = height - padding - (normalizedPrice * chartHeight);
-                    
-                    if (index === 0) {
-                        this.context.lineTo(x, y);
-                    } else {
-                        this.context.lineTo(x, y);
-                    }
-                });
-
-                this.context.lineTo(width - padding, height - padding);
-                this.context.closePath();
-                this.context.fillStyle = gradient;
-                this.context.fill();
-
-                this.context.beginPath();
-                priceHistory.forEach((dataPoint, index) => {
-                    const x = padding + (chartWidth / (priceHistory.length - 1)) * index;
-                    const normalizedPrice = (dataPoint.price - minPrice) / priceRange;
-                    const y = height - padding - (normalizedPrice * chartHeight);
-                    
-                    if (index === 0) {
-                        this.context.moveTo(x, y);
-                    } else {
-                        this.context.lineTo(x, y);
-                    }
-                });
-                
-                this.context.strokeStyle = '#3b82f6';
-                this.context.lineWidth = 2;
-                this.context.stroke();
-
-                const lastDataPoint = priceHistory[priceHistory.length - 1];
-                const lastX = padding + chartWidth;
-                const lastNormalizedPrice = (lastDataPoint.price - minPrice) / priceRange;
-                const lastY = height - padding - (lastNormalizedPrice * chartHeight);
-                
-                this.context.beginPath();
-                this.context.arc(lastX, lastY, 4, 0, Math.PI * 2);
-                this.context.fillStyle = '#3b82f6';
-                this.context.fill();
-            }
-
-            updateTime() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { 
-                    hour12: false, 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit' 
-                });
-                document.getElementById('current-time').textContent = timeString;
-            }
-
-            startSimulation() {
-                setInterval(() => {
-                    this.updateAssetCards();
-                    this.drawChart();
-                    this.updateStats();
-                    this.updateTime();
-                }, 1000);
-            }
+            // Random walk logic
+            const move = lastPrice * (Math.random() - 0.5) * volatility;
+            let newPrice = lastPrice + move;
+            
+            // Update candle stats
+            currentCandle.close = newPrice;
+            currentCandle.high = Math.max(currentCandle.high, newPrice);
+            currentCandle.low = Math.min(currentCandle.low, newPrice);
+            currentCandle.volume += Math.random() * 10;
+            
+            lastPrice = newPrice;
+            
+            // DOM Updates
+            updateHeaderUI();
         }
 
-        const dashboard = new TradingDashboard();
+        function updateOrderBook() {
+            // Simulate order book flutter
+            const spread = lastPrice * 0.0005;
+            orderBook.asks = [];
+            orderBook.bids = [];
+            
+            for(let i=0; i<8; i++) {
+                const askPrice = lastPrice + (spread * (i+1)) + (Math.random() * spread * 0.2);
+                const bidPrice = lastPrice - (spread * (i+1)) - (Math.random() * spread * 0.2);
+                orderBook.asks.push({ price: askPrice, size: Math.random() * 2 });
+                orderBook.bids.push({ price: bidPrice, size: Math.random() * 2 });
+            }
+            // Reverse asks so lowest is at bottom (closest to spread)
+            orderBook.asks.reverse(); 
+            
+            renderOrderBook();
+        }
+
+        function simulateTrade() {
+            const side = Math.random() > 0.5 ? 'buy' : 'sell';
+            const price = lastPrice + (Math.random() - 0.5) * (lastPrice * 0.0002);
+            const size = (Math.random() * 2).toFixed(4);
+            addRecentTrade(price, size, side);
+        }
+
+        // --- Chart Rendering Engine (The "Cool" Part) ---
+
+        function drawChart() {
+            // Clear canvas
+            ctx.fillStyle = chartConfig.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if(marketData.length === 0) return;
+
+            // Calculate Scale
+            let minPrice = Infinity;
+            let maxPrice = -Infinity;
+            const visibleCandles = marketData.slice(-100); // Show last 100 for better view
+
+            visibleCandles.forEach(c => {
+                if(c.low < minPrice) minPrice = c.low;
+                if(c.high > maxPrice) maxPrice = c.high;
+            });
+
+            // Add padding to range
+            const range = maxPrice - minPrice;
+            minPrice -= range * 0.1;
+            maxPrice += range * 0.1;
+            
+            const pixelPerPrice = canvas.height / (maxPrice - minPrice);
+            const candleWidth = (canvas.width - 60) / visibleCandles.length; // -60 for Y-axis
+
+            // Draw Grid
+            ctx.strokeStyle = chartConfig.gridColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Horizontal lines
+            for(let i=0; i<5; i++) {
+                const y = (canvas.height/5) * i;
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+
+            // Draw Candles
+            visibleCandles.forEach((candle, i) => {
+                const x = i * candleWidth;
+                const openY = canvas.height - (candle.open - minPrice) * pixelPerPrice;
+                const closeY = canvas.height - (candle.close - minPrice) * pixelPerPrice;
+                const highY = canvas.height - (candle.high - minPrice) * pixelPerPrice;
+                const lowY = canvas.height - (candle.low - minPrice) * pixelPerPrice;
+
+                const isUp = candle.close >= candle.open;
+                const color = isUp ? '#00c853' : '#ff3d00';
+
+                ctx.fillStyle = color;
+                ctx.strokeStyle = isUp ? '#00c853' : '#ff3d00'; // Wicks same color as body looks cleaner
+
+                // Wick
+                ctx.beginPath();
+                ctx.moveTo(x + candleWidth/2, highY);
+                ctx.lineTo(x + candleWidth/2, lowY);
+                ctx.stroke();
+
+                // Body
+                const bodyHeight = Math.max(Math.abs(openY - closeY), 1);
+                ctx.fillRect(x + 2, Math.min(openY, closeY), candleWidth - 4, bodyHeight);
+                
+                // Volume bars at bottom (subtle)
+                const volHeight = (candle.volume / 100) * (canvas.height * 0.2);
+                ctx.fillStyle = isUp ? 'rgba(0, 200, 83, 0.2)' : 'rgba(255, 61, 0, 0.2)';
+                ctx.fillRect(x + 2, canvas.height - volHeight, candleWidth - 4, volHeight);
+            });
+
+            // Draw Current Price Line
+            const currentY = canvas.height - (lastPrice - minPrice) * pixelPerPrice;
+            ctx.strokeStyle = '#2962ff';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, currentY);
+            ctx.lineTo(canvas.width, currentY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Price Label on Y-Axis
+            ctx.fillStyle = '#2962ff';
+            ctx.fillRect(canvas.width - 60, currentY - 10, 60, 20);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText(formatPrice(lastPrice), canvas.width - 55, currentY + 4);
+        }
+
+        function animate() {
+            drawChart();
+            requestAnimationFrame(animate);
+        }
+
+        // --- DOM Rendering Helpers ---
+
+        function renderWatchlist() {
+            const list = document.getElementById('watchlist');
+            list.innerHTML = '';
+            Object.keys(ASSETS).forEach(sym => {
+                const el = document.createElement('div');
+                el.className = `p-3 border-b border-[#2a2e39] cursor-pointer hover:bg-[#1e2329] transition-colors ${sym === currentSymbol ? 'bg-[#1e2329] border-l-2 border-l-blue-500' : ''}`;
+                el.onclick = () => switchAsset(sym);
+                
+                // Mock change
+                const change = (Math.random() * 2 - 1).toFixed(2);
+                const colorClass = change >= 0 ? 'text-up' : 'text-down';
+                
+                el.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-gray-200">${sym}</span>
+                        <span class="${colorClass} text-xs font-mono">${change > 0 ? '+' : ''}${change}%</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <span>Vol ${(Math.random()*10).toFixed(1)}M</span>
+                        <span class="text-gray-300 font-mono">${ASSETS[sym].price}</span>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        function renderOrderBook() {
+            const asksContainer = document.getElementById('orderbook-asks');
+            const bidsContainer = document.getElementById('orderbook-bids');
+            
+            asksContainer.innerHTML = orderBook.asks.map(o => `
+                <div class="flex px-2 py-0.5 hover:bg-[#1e2329]">
+                    <span class="w-1/3 text-down text-left">${formatPrice(o.price)}</span>
+                    <span class="w-1/3 text-right text-gray-400">${o.size.toFixed(4)}</span>
+                    <span class="w-1/3 text-right text-gray-500">${(o.price * o.size).toFixed(0)}</span>
+                </div>
+            `).join('');
+
+            bidsContainer.innerHTML = orderBook.bids.map(o => `
+                <div class="flex px-2 py-0.5 hover:bg-[#1e2329]">
+                    <span class="w-1/3 text-up text-left">${formatPrice(o.price)}</span>
+                    <span class="w-1/3 text-right text-gray-400">${o.size.toFixed(4)}</span>
+                    <span class="w-1/3 text-right text-gray-500">${(o.price * o.size).toFixed(0)}</span>
+                </div>
+            `).join('');
+
+            // Update Middle Price
+            const midEl = document.getElementById('current-price-middle');
+            midEl.innerHTML = `
+                ${formatPrice(lastPrice)} 
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ${marketData[marketData.length-1].close > marketData[marketData.length-1].open ? 'text-up' : 'text-down'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${marketData[marketData.length-1].close > marketData[marketData.length-1].open ? 'M5 10l7-7m0 0l7 7m-7-7v18' : 'M19 14l-7 7m0 0l-7-7m7 7V3'}" />
+                </svg>
+            `;
+            midEl.className = `py-1 border-y border-[#2a2e39] text-center font-bold text-lg flex items-center justify-center gap-2 ${marketData[marketData.length-1].close > marketData[marketData.length-1].open ? 'text-up' : 'text-down'}`;
+        }
+
+        function addRecentTrade(price, size, side) {
+            const container = document.getElementById('recent-trades');
+            const el = document.createElement('div');
+            el.className = 'flex text-[10px] font-mono px-2 py-1 border-b border-[#2a2e39] animate-fade-in';
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            
+            el.innerHTML = `
+                <span class="w-1/4 text-gray-500">${time}</span>
+                <span class="w-1/4 ${side === 'buy' ? 'text-up' : 'text-down'}">${side.toUpperCase()}</span>
+                <span class="w-1/4 text-right ${side === 'buy' ? 'text-up' : 'text-down'}">${formatPrice(price)}</span>
+                <span class="w-1/4 text-right text-gray-300">${size}</span>
+            `;
+            
+            container.prepend(el);
+            if(container.children.length > 20) container.lastChild.remove();
+        }
+
+        function updateHeaderUI() {
+            const priceEl = document.getElementById('current-price');
+            const buyBtnPrice = document.getElementById('btn-buy-price');
+            const sellBtnPrice = document.getElementById('btn-sell-price');
+            
+            const prevPrice = parseFloat(priceEl.innerText.replace(/,/g, ''));
+            const newPriceStr = formatPrice(lastPrice);
+            
+            priceEl.innerText = newPriceStr;
+            buyBtnPrice.innerText = newPriceStr;
+            sellBtnPrice.innerText = newPriceStr;
+            
+            if(lastPrice > prevPrice) {
+                priceEl.className = 'text-lg font-mono font-medium text-up price-flash-up';
+            } else if (lastPrice < prevPrice) {
+                priceEl.className = 'text-lg font-mono font-medium text-down price-flash-down';
+            }
+
+            // Remove flash class after anim
+            setTimeout(() => {
+                priceEl.classList.remove('price-flash-up', 'price-flash-down');
+            }, 500);
+        }
+
+        // --- Utils & Interactions ---
+
+        function switchAsset(symbol) {
+            currentSymbol = symbol;
+            lastPrice = ASSETS[symbol].price;
+            generateHistory();
+            renderWatchlist();
+            
+            document.getElementById('active-symbol').innerText = symbol;
+        }
+
+        function formatPrice(val) {
+            return val.toLocaleString('en-US', { 
+                minimumFractionDigits: ASSETS[currentSymbol].decimals, 
+                maximumFractionDigits: ASSETS[currentSymbol].decimals 
+            });
+        }
+
+        function setupInteractions() {
+            document.getElementById('btn-buy').addEventListener('click', () => {
+                addRecentTrade(lastPrice, (Math.random()*5).toFixed(4), 'buy');
+                flashEquity('up');
+            });
+            document.getElementById('btn-sell').addEventListener('click', () => {
+                addRecentTrade(lastPrice, (Math.random()*5).toFixed(4), 'sell');
+                flashEquity('down');
+            });
+
+            // Canvas Mouse Interaction (Tooltip)
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                
+                const visibleCandles = marketData.slice(-100);
+                const candleWidth = (canvas.width - 60) / visibleCandles.length;
+                const index = Math.floor(x / candleWidth);
+                
+                if(index >= 0 && index < visibleCandles.length) {
+                    const c = visibleCandles[index];
+                    const tt = document.getElementById('chart-tooltip');
+                    tt.style.display = 'block';
+                    tt.style.left = e.clientX + 10 + 'px';
+                    tt.style.top = e.clientY + 10 + 'px';
+                    
+                    document.getElementById('tt-open').innerText = formatPrice(c.open);
+                    document.getElementById('tt-high').innerText = formatPrice(c.high);
+                    document.getElementById('tt-low').innerText = formatPrice(c.low);
+                    document.getElementById('tt-close').innerText = formatPrice(c.close);
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                document.getElementById('chart-tooltip').style.display = 'none';
+            });
+        }
+
+        function flashEquity(dir) {
+            const eq = document.getElementById('equity-val');
+            // Mock equity change
+            let cur = parseFloat(eq.innerText.replace(/[$,]/g, ''));
+            cur += dir === 'up' ? Math.random() * 100 : -(Math.random() * 100);
+            eq.innerText = '$' + cur.toLocaleString('en-US', {minimumFractionDigits: 2});
+            eq.style.color = dir === 'up' ? 'var(--up-color)' : 'var(--down-color)';
+            setTimeout(() => eq.style.color = 'white', 300);
+        }
+
+        // Boot
+        init();
+
     </script>
 </body>
 </html>
