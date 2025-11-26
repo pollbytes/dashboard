@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0e27;
+            color: #e0e6ed;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #1a1f3a;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .market-status {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .assets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .asset-card {
+            background: #151932;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #1a1f3a;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .asset-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .asset-card.active {
+            border-color: #3b82f6;
+            background: #1a2038;
+        }
+
+        .asset-symbol {
+            font-size: 14px;
+            color: #8b92a7;
+            margin-bottom: 8px;
+        }
+
+        .asset-price {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .asset-change {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .asset-change.positive {
+            color: #10b981;
+        }
+
+        .asset-change.negative {
+            color: #ef4444;
+        }
+
+        .chart-container {
+            background: #151932;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #1a1f3a;
+            margin-bottom: 30px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .timeframe-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timeframe-btn {
+            background: transparent;
+            border: 1px solid #1a1f3a;
+            color: #8b92a7;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .timeframe-btn:hover {
+            border-color: #3b82f6;
+            color: #e0e6ed;
+        }
+
+        .timeframe-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #151932;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #1a1f3a;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #8b92a7;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Trading Dashboard</h1>
+            <div class="market-status">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Markets Open</span>
+                </div>
+                <span id="current-time"></span>
+            </div>
+        </div>
+
+        <div class="assets-grid" id="assets-grid"></div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title" id="chart-title">BTC/USD</div>
+                <div class="timeframe-selector">
+                    <button class="timeframe-btn" data-timeframe="1m">1M</button>
+                    <button class="timeframe-btn" data-timeframe="5m">5M</button>
+                    <button class="timeframe-btn active" data-timeframe="15m">15M</button>
+                    <button class="timeframe-btn" data-timeframe="1h">1H</button>
+                    <button class="timeframe-btn" data-timeframe="1d">1D</button>
+                </div>
+            </div>
+            <canvas id="trading-chart"></canvas>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">24h Volume</div>
+                <div class="stat-value" id="volume">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h High</div>
+                <div class="stat-value" id="high">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Low</div>
+                <div class="stat-value" id="low">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Market Cap</div>
+                <div class="stat-value" id="market-cap">$0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TradingAsset {
+            constructor(symbol, name, initialPrice, volatility) {
+                this.symbol = symbol;
+                this.name = name;
+                this.currentPrice = initialPrice;
+                this.volatility = volatility;
+                this.priceHistory = [];
+                this.change24h = 0;
+                this.high24h = initialPrice;
+                this.low24h = initialPrice;
+                this.volume24h = 0;
+            }
+
+            generateNextPrice() {
+                const randomChange = (Math.random() - 0.5) * 2 * this.volatility;
+                const trendFactor = Math.sin(Date.now() / 10000) * this.volatility * 0.5;
+                const newPrice = this.currentPrice * (1 + (randomChange + trendFactor) / 100);
+                
+                this.currentPrice = Math.max(newPrice, this.currentPrice * 0.95);
+                this.priceHistory.push({
+                    timestamp: Date.now(),
+                    price: this.currentPrice
+                });
+
+                if (this.priceHistory.length > 100) {
+                    this.priceHistory.shift();
+                }
+
+                this.high24h = Math.max(this.high24h, this.currentPrice);
+                this.low24h = Math.min(this.low24h, this.currentPrice);
+                this.volume24h = Math.random() * 1000000000;
+
+                if (this.priceHistory.length > 1) {
+                    const firstPrice = this.priceHistory[0].price;
+                    this.change24h = ((this.currentPrice - firstPrice) / firstPrice) * 100;
+                }
+
+                return this.currentPrice;
+            }
+        }
+
+        class TradingDashboard {
+            constructor() {
+                this.assets = [
+                    new TradingAsset('BTC', 'Bitcoin', 45000, 2),
+                    new TradingAsset('ETH', 'Ethereum', 3200, 2.5),
+                    new TradingAsset('EUR/USD', 'Euro', 1.09, 0.3),
+                    new TradingAsset('AAPL', 'Apple', 178, 1.5),
+                    new TradingAsset('TSLA', 'Tesla', 245, 3),
+                    new TradingAsset('GOLD', 'Gold', 2040, 0.8)
+                ];
+
+                this.selectedAsset = this.assets[0];
+                this.canvas = document.getElementById('trading-chart');
+                this.context = this.canvas.getContext('2d');
+                this.setupCanvas();
+                this.initializeUI();
+                this.startSimulation();
+            }
+
+            setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                this.context.scale(dpr, dpr);
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+            }
+
+            initializeUI() {
+                const assetsGrid = document.getElementById('assets-grid');
+                
+                this.assets.forEach((asset, index) => {
+                    const card = document.createElement('div');
+                    card.className = `asset-card ${index === 0 ? 'active' : ''}`;
+                    card.innerHTML = `
+                        <div class="asset-symbol">${asset.symbol}</div>
+                        <div class="asset-price" id="price-${asset.symbol}">$${asset.currentPrice.toFixed(2)}</div>
+                        <div class="asset-change" id="change-${asset.symbol}">+0.00%</div>
+                    `;
+                    card.addEventListener('click', () => this.selectAsset(asset, card));
+                    assetsGrid.appendChild(card);
+                });
+
+                document.querySelectorAll('.timeframe-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                        event.target.classList.add('active');
+                    });
+                });
+            }
+
+            selectAsset(asset, cardElement) {
+                document.querySelectorAll('.asset-card').forEach(card => card.classList.remove('active'));
+                cardElement.classList.add('active');
+                this.selectedAsset = asset;
+                document.getElementById('chart-title').textContent = `${asset.symbol} ${asset.name}`;
+            }
+
+            updateAssetCards() {
+                this.assets.forEach(asset => {
+                    asset.generateNextPrice();
+                    
+                    const priceElement = document.getElementById(`price-${asset.symbol}`);
+                    const changeElement = document.getElementById(`change-${asset.symbol}`);
+                    
+                    if (priceElement) {
+                        priceElement.textContent = `$${asset.currentPrice.toFixed(2)}`;
+                    }
+                    
+                    if (changeElement) {
+                        const changeText = `${asset.change24h >= 0 ? '+' : ''}${asset.change24h.toFixed(2)}%`;
+                        changeElement.textContent = changeText;
+                        changeElement.className = `asset-change ${asset.change24h >= 0 ? 'positive' : 'negative'}`;
+                    }
+                });
+            }
+
+            updateStats() {
+                const asset = this.selectedAsset;
+                document.getElementById('volume').textContent = `$${(asset.volume24h / 1e6).toFixed(2)}M`;
+                document.getElementById('high').textContent = `$${asset.high24h.toFixed(2)}`;
+                document.getElementById('low').textContent = `$${asset.low24h.toFixed(2)}`;
+                document.getElementById('market-cap').textContent = `$${(asset.currentPrice * 19000000).toLocaleString()}`;
+            }
+
+            drawChart() {
+                const rect = this.canvas.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                
+                this.context.clearRect(0, 0, width, height);
+                
+                const priceHistory = this.selectedAsset.priceHistory;
+                if (priceHistory.length < 2) return;
+
+                const prices = priceHistory.map(dataPoint => dataPoint.price);
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                const priceRange = maxPrice - minPrice;
+                
+                const padding = 40;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+
+                this.context.strokeStyle = '#1a1f3a';
+                this.context.lineWidth = 1;
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (chartHeight / 5) * i;
+                    this.context.beginPath();
+                    this.context.moveTo(padding, y);
+                    this.context.lineTo(width - padding, y);
+                    this.context.stroke();
+                }
+
+                this.context.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+                this.context.fillStyle = '#8b92a7';
+                for (let i = 0; i <= 5; i++) {
+                    const price = maxPrice - (priceRange / 5) * i;
+                    const y = padding + (chartHeight / 5) * i;
+                    this.context.fillText(`$${price.toFixed(2)}`, 5, y + 4);
+                }
+
+                const gradient = this.context.createLinearGradient(0, padding, 0, height - padding);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+                this.context.beginPath();
+                this.context.moveTo(padding, height - padding);
+                
+                priceHistory.forEach((dataPoint, index) => {
+                    const x = padding + (chartWidth / (priceHistory.length - 1)) * index;
+                    const normalizedPrice = (dataPoint.price - minPrice) / priceRange;
+                    const y = height - padding - (normalizedPrice * chartHeight);
+                    
+                    if (index === 0) {
+                        this.context.lineTo(x, y);
+                    } else {
+                        this.context.lineTo(x, y);
+                    }
+                });
+
+                this.context.lineTo(width - padding, height - padding);
+                this.context.closePath();
+                this.context.fillStyle = gradient;
+                this.context.fill();
+
+                this.context.beginPath();
+                priceHistory.forEach((dataPoint, index) => {
+                    const x = padding + (chartWidth / (priceHistory.length - 1)) * index;
+                    const normalizedPrice = (dataPoint.price - minPrice) / priceRange;
+                    const y = height - padding - (normalizedPrice * chartHeight);
+                    
+                    if (index === 0) {
+                        this.context.moveTo(x, y);
+                    } else {
+                        this.context.lineTo(x, y);
+                    }
+                });
+                
+                this.context.strokeStyle = '#3b82f6';
+                this.context.lineWidth = 2;
+                this.context.stroke();
+
+                const lastDataPoint = priceHistory[priceHistory.length - 1];
+                const lastX = padding + chartWidth;
+                const lastNormalizedPrice = (lastDataPoint.price - minPrice) / priceRange;
+                const lastY = height - padding - (lastNormalizedPrice * chartHeight);
+                
+                this.context.beginPath();
+                this.context.arc(lastX, lastY, 4, 0, Math.PI * 2);
+                this.context.fillStyle = '#3b82f6';
+                this.context.fill();
+            }
+
+            updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: false, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                document.getElementById('current-time').textContent = timeString;
+            }
+
+            startSimulation() {
+                setInterval(() => {
+                    this.updateAssetCards();
+                    this.drawChart();
+                    this.updateStats();
+                    this.updateTime();
+                }, 1000);
+            }
+        }
+
+        const dashboard = new TradingDashboard();
+    </script>
+</body>
+</html>
